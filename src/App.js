@@ -12,19 +12,31 @@ import { formatRelative } from 'date-fns'
 
 import mapStyles from './mapStyles'
 
+import './App.css'
+
 const libraries = ['places']
-// map component wants to fill whatever container it's in and it fills full screen for now.  it's set to view size right now but it might work with %'s to fill a smaller container/window/component
+
+// this object is how we can set the size of the GoogleMap component
 const mapContainerStyle = {
+  // map component wants to fill whatever container it's in and it fills full screen for now.  it's currently set to view size but it might work with %'s to fill a smaller container/window/component/modal
   width: '100vw',
   height: '100vh'
 }
-// starting position of the map
+
+// this is the starting position of the map
 const center = {
+  // later, we can set the starting position programatically so that the map opens centered on either the user's location (shipping address or pull coordinates from their browser [potential legal implications]) or a selected farm
   lat: 43.6532,
   lng: -79.3831
 }
+
+// this object configures the options for the GoogleMap component
 const options = {
-  styles: mapStyles
+  // this style config overrides the defauly styling.  get style config files from www.snazzymaps.com
+  styles: mapStyles,
+  // this disables all of the default controls so we can add back only what we want
+  disableDefaultUI: true,
+  zoomControl: true
 }
 
 function App() {
@@ -41,6 +53,7 @@ function App() {
 
   return (
     <div>
+      <h1 className='map-icon'>UFO sightings 🛸</h1>
       {
       // `mapContainerStyle`, `center` and `options` are again abstraced away to prevent unwanted re-renders
       }
