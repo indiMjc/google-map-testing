@@ -142,7 +142,9 @@ const App = () => {
                             <h2>{selected.name}</h2>
                             <p>{selected.streetAddress}</p>
                             <p>{selected.description ? selected.description : ''}</p>
-                            <p>{selected.name} is {getDistanceBetween(selected.lat, selected.lng, userInfo.lat, userInfo.lng)}mi away from your home address</p>
+                            { getDistanceBetween > 0 && 
+                                <p>{selected.name} is {getDistanceBetween(selected.lat, selected.lng, userInfo.lat, userInfo.lng)}mi away from your home address</p>
+                            }
                           </div>
                       </InfoWindow>
         }              
