@@ -10,43 +10,19 @@ import {
 import '@reach/combobox/styles.css'
 
 import PlacesAutocompleteInput from './components/PlacesAutocompleteInput'
-import { coordinatesSeed } from './util/farmSeed'
+import { coordinatesSeed, userInfo } from './util/farmSeed'
+import { getDistanceBetween } from './util/haversineFormula'
 
-import mapStyles from './mapStyles'
+import { 
+  libraries, 
+  mapContainerStyle, 
+  center, 
+  options 
+} from './util/mapConfig'
 
 import './App.css'
 
-const libraries = ['places']
-
 //!IMPORTANT!  this google maps library is great, but it has issues with unwanted re-renders.  these issues are easy to address.  just avoid using object/arrays as literals and always abstract things like onClick handlers into an outside function
-
-// this object is how we can set the size of the GoogleMap component
-const mapContainerStyle = {
-  // map component wants to fill whatever container it's in and it fills full screen for now.  it's currently set to view size but it might work with %'s to fill a smaller container/window/component/modal
-  width: '100vw',
-  height: '100vh'
-}
-
-// this is the starting position of the map
-const center = {
-  // later, we can set the starting position programatically so that the map opens centered on either the user's location (shipping address or pull coordinates from their browser [potential legal implications]) or a selected farm
-  lat: 27.994402,
-  lng: -81.760254
-}
-
-// this object configures the options for the GoogleMap component
-const options = {
-  // this style config overrides the defauly styling.  get style config files from www.snazzymaps.com
-  styles: mapStyles,
-  // this disables all of the default controls so we can add back only what we want
-  disableDefaultUI: true,
-  zoomControl: true
-}
-
-// set api key for geocode
-// Geocode.setApiKey(process.env.REACT_APP_GOOGLE_MAPS_API_KEY)
-// set region for geocode to united states
-// Geocode.setRegion("us")
 
 const nullFarm = {
   name: '',
@@ -55,7 +31,7 @@ const nullFarm = {
 }
 
 const App = () => {
-  // array of markers to be rendered on map
+  // array of farm map markers to be rendered on map
   const [ markers, setMarkers ] = useState(coordinatesSeed || [])
 
   // this stores a marker in state to be selected with an onClick callback on the rendered Marker components
@@ -63,7 +39,6 @@ const App = () => {
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    // the reason `libraries` is abstracted away is to prevent unintended re-renders.  best practice is to never use arrays and objects as literals
     libraries
   })
 
@@ -83,9 +58,7 @@ const App = () => {
     mapRef.current = map
   }, [])
 
-  // this function allows the map to pan to put a marker in the center of the map if use clicks it
   const panTo = useCallback(({ lat, lng }) => {
-    // the panTo function will access the map reference created above and pull data from that instead of accessing the component itself and forcing a re-render
     mapRef.current.panTo({ lat, lng })
     mapRef.current.setZoom(14)
   }, [])
@@ -108,39 +81,58 @@ const App = () => {
         center={center}
         options={options}
         // onClick={onMapClick}
+        // on load, set map reference
         onLoad={onMapLoad}
       >
 
-        {/* the markers are rendered inside the GoogleMap component by mapping over the `markers` array in state.  the position is derived from the coordinates that are pulled in on the onClick function */}      
-        {markers.map(marker => <Marker 
-                                  key={ marker.lat + marker.lng } 
-                                  position={{
-                                    lat: marker.lat,
-                                    lng: marker.lng
-                                  }}
-                                  icon={{
-                                    // this will override the default marker with custom icon/image
-                                    url: '/alien.png',
+      {/* add singular marker for user with different icon to easily distinguish from farms*/}
+      <Marker 
+        key={ userInfo.lat + userInfo.lng }
+        position={{
+          lat: userInfo.lat,
+          lng: userInfo.lng
+        }}
+        icon={{
+          url: './thumbtack.png',
+          scaledSize: new window.google.maps.Size(40, 40),
+          origin: new window.google.maps.Point(0, 0),
+          anchor: new window.google.maps.Point(20, 20)
+        }}
+        onClick={() => {
+          setSelected(userInfo)
+        }}
+      />
 
-                                    // resize icon
-                                    scaledSize: new window.google.maps.Size(20, 40),
+      {/* the markers for farmers are rendered inside the GoogleMap component by mapping over the `markers` array in state.  the position is derived from the coordinates that are pulled in on the onClick function */}      
+      {markers.map(marker => <Marker 
+                              key={ marker.lat + marker.lng } 
+                              position={{
+                                lat: marker.lat,
+                                lng: marker.lng
+                              }}
+                              icon={{
+                                // this will override the default marker with custom icon/image
+                                url: '/leaf.png',
 
-                                    // not sure what origin does 😜 need to check docs
-                                    origin: new window.google.maps.Point(0, 0),
+                                // resize icon
+                                scaledSize: new window.google.maps.Size(40, 40),
 
-                                    // if you set the anchor to half of whatever the `scaledSize` is, it will center the new icon on the mouse click.  otherwise it's off center
-                                    anchor: new window.google.maps.Point(10, 20)
-                                  }}
+                                // not sure what origin does 😜 need to check docs
+                                origin: new window.google.maps.Point(0, 0),
 
-                                  // when a user clicks a marker, save that marker to state for use on the InfoWindow component
-                                  onClick={() => {
-                                    setSelected(marker)
-                                    console.log(marker)
-                                  }}
-                                />)}
+                                // if you set the anchor to half of whatever the `scaledSize` is, it will center the new icon on the mouse click.  otherwise it's off center
+                                anchor: new window.google.maps.Point(20, 20)
+                              }}
+                              // when a user clicks a marker, save that marker to state for use on the InfoWindow component
+                              onClick={() => {
+                                setSelected(marker)
+                              }}
+                            />
+                  )
+      }
 
         {/* render an info window if user clicks a map marker.  later, this will have the farm/item info for whatever farm/item a user clicks on */}
-        {selected.lat &&  <InfoWindow 
+        {selected.lat !== null &&  <InfoWindow 
                         position={{ lat: selected.lat, lng: selected.lng }}
 
                         // when the user closes the info window, set the selected marker back to null by using the onCloseClick prop for the InfoWindow component
@@ -149,7 +141,8 @@ const App = () => {
                           <div>
                             <h2>{selected.name}</h2>
                             <p>{selected.streetAddress}</p>
-                            <p>{selected.description}</p>
+                            <p>{selected.description ? selected.description : ''}</p>
+                            <p>{selected.name} is {getDistanceBetween(selected.lat, selected.lng, userInfo.lat, userInfo.lng)}mi away from your home address</p>
                           </div>
                       </InfoWindow>
         }              

@@ -21,3 +21,10 @@ export const coordinatesSeed = [
       lng: -81.3922120078125
     }
   ]
+
+  export const userInfo = {
+    name: 'Michael Curry',
+    streetAddress: "6323 Decker Avenue, Titusville, FL",
+    lat: 28.7005046542611,
+    lng: -80.3922120078125
+  }

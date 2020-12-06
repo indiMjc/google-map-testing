@@ -20,10 +20,12 @@ const PlacesAutocompleteInput = props => {
       clearSuggestions
     } = usePlacesAutocomplete({
       requestOptions: {
+
         location: {
           lat: () => props.lat,
           lng: () => props.lng
         },
+
         radius: 100 * 1000
       }
     })
@@ -36,7 +38,9 @@ const PlacesAutocompleteInput = props => {
         try {
             const results = await getGeocode({ address })
             const { lat, lng } = await getLatLng(results[0])
+
             props.panTo({ lat, lng })
+
         } catch (err) {
             console.log('Error', err)
         }
@@ -45,6 +49,7 @@ const PlacesAutocompleteInput = props => {
     return (
         <div className='address-search'>
             <Combobox onSelect={handleSelect}>
+
                 <ComboboxInput 
                     value={value}
                     onChange={e => {
@@ -53,12 +58,15 @@ const PlacesAutocompleteInput = props => {
                     disabled={!ready}
                     placeholder='Please enter an address'
                 />
+
                 <ComboboxPopover>
                     {status === "OK" &&
                         data.map(({ description }) => (
                         <ComboboxOption key={description} value={description} />
                     ))} 
+                    
                 </ComboboxPopover>
+
             </Combobox>
         </div>
     )
